@@ -22,31 +22,41 @@ import base64
 
 start_time = datetime.datetime.now()
 
+# Cache BIP0039 words globally to avoid repeated file reads
+_BIP0039_WORDS = None
+
+def load_bip_words():
+    """Load BIP0039 words once and cache them."""
+    global _BIP0039_WORDS
+    if _BIP0039_WORDS is None:
+        with open('BIP0039.txt', 'r') as f:
+            _BIP0039_WORDS = f.read().split()
+    return _BIP0039_WORDS
+
 def bip(num):
-    with open('BIP0039.txt', 'r') as f:
-        words = f.read().split()
-        for word in words:
-            sent = [random.choice(words)
-                for word in range(int(num))]
-            return ' '.join(sent)
+    """Generate random mnemonic phrase from BIP0039 word list."""
+    words = load_bip_words()
+    return ' '.join(random.choice(words) for _ in range(int(num)))
 
 def passw(filename):
+    """Generate random passphrase from custom dictionary file."""
     try:
+        if not filename:  # Handle empty filename
+            return ''
         with open(filename, 'r') as f:
             words = f.read().split()
-            for word in words:
-                sent = [random.choice(words)
-                        for word in range(int(1))]
-                return ' '.join(sent)
-    except FileNotFoundError:
-        pass
-    except TypeError:
-        pass
+            if words:  # Only if file has words
+                return random.choice(words)
+            return ''
+    except (FileNotFoundError, TypeError):
+        return ''
 
 
 def hmac512(mnemonic, passphrase):
-    d = mnemonic+' '+ passphrase
-    return d
+    """Combine mnemonic and passphrase."""
+    if passphrase:
+        return f"{mnemonic} {passphrase}"
+    return mnemonic
     
 def master(hmacsha512):
     return hashlib.sha256(hmacsha512.encode("utf-8")).hexdigest().upper()
@@ -182,28 +192,22 @@ def main():
             public_key = pubkey(masterkey)
             address = addr(public_key)
             WIF = wif(masterkey)
-            data = (masterkey, address)
-            balance = get_balance(data[1])
+            balance = get_balance(address)
+            
+            # Pre-format output strings to avoid redundant computations
+            output_str = (f'mnemonic and passphrase:   {mnemonic} {passphrase}\n'
+                         f'private key:                           {masterkey}\n'
+                         f'address:                                 {address}\n'
+                         f'wif:                                        {WIF}\n'
+                         f'Balance: {balance}\n\n')
+            
             if (balance == 0.00000000):
-                 print('mnemonic and passphrase:   '+str(mnemonic)+ ' ' +str(passphrase)+'\n'+
-                  'private key:                           '+str(masterkey)+'\n'+
-                  'address:                                 '+str(address)+'\n'+
-                  'wif:                                        '+str(WIF)+"\n"+
-                   "Balance: " + str(balance) + "\n\n")
+                print(output_str)
             elif (balance > 0.00000000):
                 successes = successes + 1
-                file = open("found.txt","a")
-                file.write('mnemonic and passphrase:   '+str(mnemonic)+ ' ' +str(passphrase)+'\n'+
-                  'private key:                           '+str(masterkey)+'\n'+
-                  'address:                                 '+str(address)+'\n'+
-                  'wif:                                        '+str(WIF)+"\n"+
-                   "Balance: " + str(balance) + "\n\n")
-                file.close()
-                print('mnemonic and passphrase:   '+str(mnemonic)+ ' ' +str(passphrase)+'\n'+
-                  'private key:                           '+str(masterkey)+'\n'+
-                  'address:                                 '+str(address)+'\n'+
-                  'wif:                                        '+str(WIF)+"\n"+
-                   "Balance: " + str(balance) + "\n\n")
+                with open("found.txt", "a") as file:
+                    file.write(output_str)
+                print(output_str)
             
         elif event == 'Settings':
             event, values = create_settings_window(settings).read(close=True)
