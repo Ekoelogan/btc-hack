@@ -1,5 +1,4 @@
-base58
-ecdsa
-requests
-multiprocessing
-PySimpleGUI
+base58>=2.1.1
+ecdsa>=0.19.1
+requests>=2.31.0
+PySimpleGUI>=5.0.8.3
