@@ -47,7 +47,9 @@ def passw(filename):
 
 
 def hmac512(mnemonic, passphrase):
-    d = mnemonic+' '+ passphrase
+    # Note: This function currently performs simple concatenation.
+    # For true BIP39 implementation, use: hmac.new(passphrase.encode(), mnemonic.encode(), hashlib.sha512)
+    d = mnemonic + ' ' + passphrase
     return d
     
 def master(hmacsha512):
@@ -189,7 +191,7 @@ def main():
             filename = values['-in-'].rstrip()
             num = values['num']
             mnemonic = bip(num)
-            passphrase = passw(filename) if filename else ''
+            passphrase = passw(filename)
             hmacsha512 = hmac512(mnemonic, passphrase)
             masterkey = master(hmacsha512)
             public_key = pubkey(masterkey)
