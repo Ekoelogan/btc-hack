@@ -31,7 +31,7 @@ The original script as well as the new one are available in this repository.
 
 # Dependencies
 
-<a href="https://www.python.org/downloads/">Python 3.6</a> or higher
+<a href="https://www.python.org/downloads/">Python 3.8</a> or higher
 
 btc-hack-2.py requires the  modules listed in the <a href="/requirements.txt">requirements.txt<a/>
 

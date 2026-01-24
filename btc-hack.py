@@ -21,9 +21,9 @@ try:
 
 except ImportError: 
     import subprocess
-    subprocess.check_call(["python3", '-m', 'pip', 'install', 'base58==1.0.0'])
-    subprocess.check_call(["python3", '-m', 'pip', 'install', 'ecdsa==0.13'])
-    subprocess.check_call(["python3", '-m', 'pip', 'install', 'requests==2.19.1'])
+    subprocess.check_call(["python3", '-m', 'pip', 'install', 'base58>=2.1.1'])
+    subprocess.check_call(["python3", '-m', 'pip', 'install', 'ecdsa>=0.19.1'])
+    subprocess.check_call(["python3", '-m', 'pip', 'install', 'requests>=2.31.0'])
     import base58
     import ecdsa
     import requests
