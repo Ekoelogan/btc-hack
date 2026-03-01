@@ -42,24 +42,24 @@ def private_key_to_public_key(private_key):
 
 def public_key_to_address(public_key):
     alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-    count = 0; val = 0
     var = hashlib.new('ripemd160')
     var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
     doublehash = hashlib.sha256(hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()
     address = '00' + var.hexdigest() + doublehash[0:8]
-    for char in address:
-        if (char != '0'):
-            break
-        count += 1
+    
+    # Optimize leading zero count
+    count = len(address) - len(address.lstrip('0'))
     count = count // 2
+    
     n = int(address, 16)
     output = []
     while (n > 0):
-        n, remainder = divmod (n, 58)
+        n, remainder = divmod(n, 58)
         output.append(alphabet[remainder])
-    while (val < count):
-        output.append(alphabet[0])
-        val += 1
+    
+    # Add leading '1's for each leading zero byte
+    output.extend([alphabet[0]] * count)
+    
     return ''.join(output[::-1])
 
 def get_balance(address):
@@ -89,15 +89,18 @@ def process(data, balance):
     private_key = data[0]
     address = data[1]
     if (balance == 0.00000000):
-        print("{:<34}".format(str(address)) + ": " + str(balance))
+        print(f"{address:<34}: {balance}")
     if (balance > 0.00000000):
-        file = open("found.txt","a")
-        file.write("address: " + str(address) + "\n" +
-                   "private key: " + str(private_key) + "\n" +
-                   "WIF private key: " + str(private_key_to_WIF(private_key)) + "\n" +
-                   "public key: " + str(private_key_to_public_key(private_key)).upper() + "\n" +
-                   "balance: " + str(balance) + "\n\n")
-        file.close()
+        # Cache computed values to avoid redundant calculations
+        wif_key = private_key_to_WIF(private_key)
+        pub_key = private_key_to_public_key(private_key).upper()
+        
+        with open("found.txt", "a") as file:
+            file.write(f"address: {address}\n"
+                      f"private key: {private_key}\n"
+                      f"WIF private key: {wif_key}\n"
+                      f"public key: {pub_key}\n"
+                      f"balance: {balance}\n\n")
 
 def thread(iterator):
     processes = []

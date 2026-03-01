@@ -7,7 +7,6 @@
 
 import hashlib
 import os
-import hashlib
 import binascii
 import requests
 import ecdsa
@@ -32,24 +31,24 @@ def private_key_to_public_key(private_key):
 
 def public_key_to_address(public_key):
     alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-    count = 0; val = 0
     var = hashlib.new('ripemd160')
     var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
     doublehash = hashlib.sha256(hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()
     address = '00' + var.hexdigest() + doublehash[0:8]
-    for char in address:
-        if (char != '0'):
-            break
-        count += 1
+    
+    # Optimize leading zero count
+    count = len(address) - len(address.lstrip('0'))
     count = count // 2
+    
     n = int(address, 16)
     output = []
     while (n > 0):
-        n, remainder = divmod (n, 58)
+        n, remainder = divmod(n, 58)
         output.append(alphabet[remainder])
-    while (val < count):
-        output.append(alphabet[0])
-        val += 1
+    
+    # Add leading '1's for each leading zero byte
+    output.extend([alphabet[0]] * count)
+    
     return ''.join(output[::-1])
 
 def get_balance(address):
@@ -148,31 +147,32 @@ def main():
             private_key = generate_private_key()
             public_key = private_key_to_public_key(private_key)
             address = public_key_to_address(public_key)
-            data = (private_key, address)
-            balance = get_balance(data[1])
+            balance = get_balance(address)
             attempts = attempts + 1
-            private_key = data[0]
-            address = data[1]
+            
+            # Cache these values to avoid redundant computations
+            wif_key = private_key_to_WIF(private_key)
+            public_key_upper = public_key.upper()
+            
             if (balance == 0.00000000):
-                print("Address: " + "{:<34}".format(str(address)) + "\n" +
-                   "Private key: " + str(private_key) + "\n" +
-                   "WIF private key: " + str(private_key_to_WIF(private_key)) + "\n" +
-                   "Public key: " + str(private_key_to_public_key(private_key)).upper() + "\n" +
-                   "Balance: " + str(balance) + "\n\n")
+                print(f"Address: {address:<34}\n"
+                      f"Private key: {private_key}\n"
+                      f"WIF private key: {wif_key}\n"
+                      f"Public key: {public_key_upper}\n"
+                      f"Balance: {balance}\n\n")
             elif (balance > 0.00000000):
                 successes = successes + 1
-                file = open("found.txt","a")
-                file.write("Address: " + str(address) + "\n" +
-                   "Private key: " + str(private_key) + "\n" +
-                   "WIF private key: " + str(private_key_to_WIF(private_key)) + "\n" +
-                   "Public key: " + str(private_key_to_public_key(private_key)).upper() + "\n" +
-                   "Balance: " + str(balance) + "\n\n")
-                file.close()
-                print("Address: " + "{:<34}".format(str(address)) + "\n" +
-                   "Private key: " + str(private_key) + "\n" +
-                   "WIF private key: " + str(private_key_to_WIF(private_key)) + "\n" +
-                   "Public key: " + str(private_key_to_public_key(private_key)).upper() + "\n" +
-                   "Balance: " + str(balance) + "\n\n")
+                with open("found.txt", "a") as file:
+                    file.write(f"Address: {address}\n"
+                               f"Private key: {private_key}\n"
+                               f"WIF private key: {wif_key}\n"
+                               f"Public key: {public_key_upper}\n"
+                               f"Balance: {balance}\n\n")
+                print(f"Address: {address:<34}\n"
+                      f"Private key: {private_key}\n"
+                      f"WIF private key: {wif_key}\n"
+                      f"Public key: {public_key_upper}\n"
+                      f"Balance: {balance}\n\n")
             
         elif event == 'Settings':
             event, values = create_settings_window(settings).read(close=True)
