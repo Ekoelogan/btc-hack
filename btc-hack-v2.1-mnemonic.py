@@ -22,30 +22,34 @@ import base64
 
 start_time = datetime.datetime.now()
 
+# Cache the BIP0039 word list to avoid repeated file reads
+_bip_words = None
+
+def _load_bip_words():
+    global _bip_words
+    if _bip_words is None:
+        with open('BIP0039.txt', 'r') as f:
+            _bip_words = f.read().split()
+    return _bip_words
+
 def bip(num):
-    with open('BIP0039.txt', 'r') as f:
-        words = f.read().split()
-        for word in words:
-            sent = [random.choice(words)
-                for word in range(int(num))]
-            return ' '.join(sent)
+    words = _load_bip_words()
+    sent = [random.choice(words) for _ in range(int(num))]
+    return ' '.join(sent)
 
 def passw(filename):
     try:
         with open(filename, 'r') as f:
             words = f.read().split()
-            for word in words:
-                sent = [random.choice(words)
-                        for word in range(int(1))]
-                return ' '.join(sent)
-    except FileNotFoundError:
-        pass
-    except TypeError:
-        pass
+            return random.choice(words) if words else ''
+    except (FileNotFoundError, TypeError):
+        return ''
 
 
 def hmac512(mnemonic, passphrase):
-    d = mnemonic+' '+ passphrase
+    # Note: This function currently performs simple concatenation.
+    # For true BIP39 implementation, use: hmac.new(passphrase.encode(), mnemonic.encode(), hashlib.sha512)
+    d = mnemonic + ' ' + passphrase
     return d
     
 def master(hmacsha512):
@@ -58,16 +62,24 @@ def pubkey(masterkey):
     return '04' + binascii.hexlify(s.verifying_key.to_string()).decode('utf-8')
 
 def addr(public_key):
-    output = []; alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     var = hashlib.new('ripemd160')
     var.update(hashlib.sha256(binascii.unhexlify(public_key.encode())).digest())
     var = '00' + var.hexdigest() + hashlib.sha256(hashlib.sha256(binascii.unhexlify(('00' + var.hexdigest()).encode())).digest()).hexdigest()[0:8]
-    count = [char != '0' for char in var].index(True) // 2
+    
+    # Count leading zeros more efficiently
+    count = len(var) - len(var.lstrip('0'))
+    count = count // 2
+    
+    # Convert to base58
     n = int(var, 16)
+    output = []
     while n > 0:
         n, remainder = divmod(n, 58)
         output.append(alphabet[remainder])
-    for i in range(count): output.append(alphabet[0])
+    
+    # Add leading '1's for leading zero bytes
+    output.extend([alphabet[0]] * count)
     return ''.join(output[::-1])
 
 def wif(masterkey):
@@ -75,10 +87,13 @@ def wif(masterkey):
     var = hashlib.sha256(binascii.unhexlify(hashlib.sha256(binascii.unhexlify(var80)).hexdigest())).hexdigest()
     return str(base58.b58encode(binascii.unhexlify(str(var80) + str(var[0:8]))), 'utf-8')
 
+# Create a reusable session for better performance
+_session = requests.Session()
+
 def get_balance(address):
     #time.sleep(0.2) #This is to avoid over-using the API and keep the program running indefinately. (Un-comment if exceeding requests)
     try:
-        response = requests.get("https://api.blockcypher.com/v1/btc/main/addrs/" + str(address) + "/balance")
+        response = _session.get(f"https://api.blockcypher.com/v1/btc/main/addrs/{address}/balance")
         return float(response.json()['balance']) 
     except:
         return -1
@@ -182,28 +197,22 @@ def main():
             public_key = pubkey(masterkey)
             address = addr(public_key)
             WIF = wif(masterkey)
-            data = (masterkey, address)
-            balance = get_balance(data[1])
+            balance = get_balance(address)
+            
+            # Prepare output string once
+            output_str = (f'mnemonic and passphrase:   {mnemonic} {passphrase}\n'
+                         f'private key:               {masterkey}\n'
+                         f'address:                   {address}\n'
+                         f'wif:                       {WIF}\n'
+                         f'Balance: {balance}\n\n')
+            
             if (balance == 0.00000000):
-                 print('mnemonic and passphrase:   '+str(mnemonic)+ ' ' +str(passphrase)+'\n'+
-                  'private key:                           '+str(masterkey)+'\n'+
-                  'address:                                 '+str(address)+'\n'+
-                  'wif:                                        '+str(WIF)+"\n"+
-                   "Balance: " + str(balance) + "\n\n")
+                print(output_str)
             elif (balance > 0.00000000):
                 successes = successes + 1
-                file = open("found.txt","a")
-                file.write('mnemonic and passphrase:   '+str(mnemonic)+ ' ' +str(passphrase)+'\n'+
-                  'private key:                           '+str(masterkey)+'\n'+
-                  'address:                                 '+str(address)+'\n'+
-                  'wif:                                        '+str(WIF)+"\n"+
-                   "Balance: " + str(balance) + "\n\n")
-                file.close()
-                print('mnemonic and passphrase:   '+str(mnemonic)+ ' ' +str(passphrase)+'\n'+
-                  'private key:                           '+str(masterkey)+'\n'+
-                  'address:                                 '+str(address)+'\n'+
-                  'wif:                                        '+str(WIF)+"\n"+
-                   "Balance: " + str(balance) + "\n\n")
+                with open("found.txt", "a") as file:
+                    file.write(output_str)
+                print(output_str)
             
         elif event == 'Settings':
             event, values = create_settings_window(settings).read(close=True)
