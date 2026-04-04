@@ -1,13 +1,29 @@
 
+# !!! NEW v3 !!! BTC-Hack-v3 - Enhanced Dashboard Edition !!!
+
+**Major Update**: Version 3 with comprehensive dashboard, real-time analytics, multi-API support, and modern UI!
+
+🚀 **New Features**:
+- Real-time statistics dashboard
+- Performance metrics and API health monitoring  
+- Dual search modes (Private Key + Mnemonic)
+- Multi-API support (BlockCypher, Blockchain.info)
+- Export statistics, pause/resume, enhanced logging
+- Professional modern UI with 150+ themes
+
+📖 **See [README-v3.md](README-v3.md) for complete v3 documentation**
+
+---
+
 # !!! SoChain no longer Free !!!
 
-SoChains API is no longer free, I have updated the API call to BlockCyper which is free at present and working.
+SoChains API is no longer free, I have updated the API call to BlockCypher which is free at present and working.
 
 # !!! NEW !!! BTC-Hack-OFFLINE !!!
 Search faster using multi-thrteaded support and an offline database with over 43 Million addresses Updated to 11/13/2022!<br/>
 <a href="https://github.com/DavidMGilbert/btc-hack-offline"><<< GET IT HERE >>></a>
 
-# BTC-Hack-v2 - Bitcoin Wallet Hack
+# BTC-Hack - Bitcoin Wallet Hack Tool
 
 An automated bitcoin wallet generator that brute forces random wallet addresses by checking their balance in real-time using an online API.
 
@@ -48,6 +64,28 @@ $ git clone https://github.com/DavidMGilbert/btc-hack.git btc-hack
 ```
 
 # Quick Start
+
+## Run Version 3 (Recommended - Enhanced Dashboard)
+
+```bash
+$ python3 btc-hack-v3-dashboard.py
+```
+
+**v3 Features**: Dashboard, real-time stats, multi-API, pause/resume, export stats
+
+## Run Version 2.1 (Mnemonic Phrases)
+
+```bash
+$ python3 btc-hack-v2.1-mnemonic.py
+```
+
+## Run Version 2 (Basic GUI)
+
+```bash
+$ python3 btc-hack-v2.py
+```
+
+## Run Version 1 (CLI with Multiprocessing)
 
 ```
 $ python3 btc-hack-v2.py

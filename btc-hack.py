@@ -1,4 +1,4 @@
-# BTC-Hack
+# BTC-Hack (Updated)
 # Made by David Gilbert
 # https://github.com/DavidMGilbert/btc-hack
 # https://www.davidmgilbert.com
@@ -63,11 +63,15 @@ def public_key_to_address(public_key):
     return ''.join(output[::-1])
 
 def get_balance(address):
-    time.sleep(0.2) #This is to avoid over-using the API and keep the program running indefinately.
+    """Check balance of Bitcoin address with improved error handling"""
+    time.sleep(0.2)  # Rate limiting
     try:
-        response = requests.get("https://api.blockcypher.com/v1/btc/main/addrs/" + str(address) + "/balance")
-        return float(response.json()['balance']) 
-    except:
+        response = requests.get(f"https://api.blockcypher.com/v1/btc/main/addrs/{address}/balance", timeout=10)
+        if response.status_code == 200:
+            return float(response.json().get('balance', 0)) / 100000000  # Convert satoshis to BTC
+        return 0.0
+    except Exception as e:
+        print(f"⚠️  API Error: {e}")
         return -1
 
 def data_export(queue):

@@ -1,4 +1,4 @@
-# BTC hack v2.1
+# BTC hack v2.1 (Updated)
 # Made by David Gilbert
 # https://github.com/davidmgilbert/btc-hack
 # https://www.davidmgilbert.com
@@ -76,11 +76,20 @@ def wif(masterkey):
     return str(base58.b58encode(binascii.unhexlify(str(var80) + str(var[0:8]))), 'utf-8')
 
 def get_balance(address):
-    #time.sleep(0.2) #This is to avoid over-using the API and keep the program running indefinately. (Un-comment if exceeding requests)
+    """Check balance of Bitcoin address with improved error handling"""
     try:
-        response = requests.get("https://api.blockcypher.com/v1/btc/main/addrs/" + str(address) + "/balance")
-        return float(response.json()['balance']) 
-    except:
+        response = requests.get(f"https://api.blockcypher.com/v1/btc/main/addrs/{address}/balance", timeout=10)
+        if response.status_code == 200:
+            return float(response.json().get('balance', 0)) / 100000000  # Convert satoshis to BTC
+        return 0.0
+    except requests.exceptions.Timeout:
+        print(f"⚠️  Timeout checking {address}")
+        return -1
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️  API Error: {e}")
+        return -1
+    except Exception as e:
+        print(f"⚠️  Unexpected error: {e}")
         return -1
 
 
